@@ -26,8 +26,8 @@ conda create --name "<env_name>" python="<version>"
 conda activate "<env_name>"
 # Install lib using conda
 conda install --file "<requirements.txt>"
-# Install other libs which conda does not provide using pip
-pip install "<requirements.txt>"
+# Install lib using pip
+pip install -r "<requirements.txt>"
 # Coming back to base env
 conda deactivate
 ```
