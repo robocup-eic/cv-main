@@ -1,5 +1,7 @@
 # Computer Vision Initialization Script
 
+Note: Running with real models are not tested yet. (18/04/2022)
+
 ## Prerequisites
 
 * python >= 3.8.5 (For running main.py)
@@ -19,13 +21,13 @@ Each of the model's libraries must be configured through conda environment from 
 
 ```bash
 # Create new conda env
-conda create --name <env_name> python=<version>
+conda create --name "<env_name>" python="<version>"
 # Activating newly created env
-conda activate <env_name>
+conda activate "<env_name>"
 # Install lib using conda
-conda install --file <requirements.txt>
+conda install --file "<requirements.txt>"
 # Install other libs which conda does not provide using pip
-pip install requirements.txt
+pip install "<requirements.txt>"
 # Coming back to base env
 conda deactivate
 ```
