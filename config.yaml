@@ -1,0 +1,9 @@
+obj-detection:
+  conda_env: "rbc_objdetect"
+  exec_path: "robocup2022-cv-object-detection/object_detection.py"
+what-is-that:
+  conda_env: "rbc_whatisthat"
+  exec_path: "robocup2022-cv-what-is-that/what_is_that_v2.py"
+person-track:
+  conda_env: "rbc_persontrack"
+  exec_path: "robocup2022-cv-person-tracker/person_tracker.py"
