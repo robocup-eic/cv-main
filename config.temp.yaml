@@ -1,0 +1,23 @@
+python-exec: "python"
+
+processes:
+  process1:
+    conda_env: "testenv"
+    exec_path: "test.py"
+  process2:
+    conda_env: "testenv"
+    exec_path: "test.py"
+  process3:
+    conda_env: "testenv"
+    exec_path: "test.py"
+
+states:
+  "0":
+    - process1
+    - process2
+    - process3
+  "1":
+    - process3
+  "2":
+    - process1
+    - process2
