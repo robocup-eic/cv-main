@@ -1,10 +1,8 @@
 import subprocess
 import threading
-import signal
 import os
 import time
 from argparse import ArgumentParser
-from py import process
 import yaml
 
 
