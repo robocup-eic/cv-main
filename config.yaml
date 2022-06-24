@@ -1,4 +1,5 @@
 python-exec: "python3"
+conda-exec: "~/anaconda3/bin/conda.sh"
 
 processes:
   obj-detection:

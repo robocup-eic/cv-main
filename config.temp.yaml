@@ -1,4 +1,5 @@
 python-exec: "python"
+conda-exec: D:\ProgramData\Anaconda3\Library\bin\conda.bat
 
 processes:
   process1:

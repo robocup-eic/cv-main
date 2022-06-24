@@ -20,7 +20,12 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+
+colors = [bcolors.OKPURPLE, bcolors.OKBLUE, bcolors.OKGREEN, bcolors.OKYELLOW, bcolors.OKCYAN]
+p_count = 0
+configs = dict()
 running_processes = dict()
+current_state = None
 
 
 def read_config(config_path):
@@ -30,15 +35,18 @@ def read_config(config_path):
     if "python-exec" not in configs or configs["python-exec"] is None:
         configs["python-exec"] = "python"
         print("python-exec is not set in config.yaml, uses 'python' as default value")
+    if "conda-exec" not in configs or configs["conda-exec"] is None:
+        configs["conda-exec"] = "conda"
+        print("conda-exec is not set in config.yaml, uses 'conda' as default value")
     if "processes" not in configs:
         raise ValueError("There is no processes provided in config.yaml")
     if "states" not in configs or configs["states"] is None:
         configs["states"] = [{"default": [k for k in configs["processes"]]}]
         print("states is not set in config.yaml, created state 'default' with all processes started")
 
-    python_exec = configs["python-exec"]
+    configs["python-exec"] = os.path.normpath(configs["python-exec"])
+    configs["conda-exec"] = os.path.normpath(configs["conda-exec"])
     
-    processes = list()
     process_names = set()
     for name, conf in configs["processes"].items():
         if "exec_path" not in conf or "conda_env" not in conf:
@@ -47,61 +55,78 @@ def read_config(config_path):
             raise ValueError("Value of 'exec_path' in process '%s' must be string" % name)
         if not isinstance(conf["conda_env"], str):
             raise ValueError("Value of 'conda_env' in process '%s' must be string" % name)
-        env_name = conf["conda_env"]
-        script_path = os.path.normpath(conf["exec_path"])
+        conf["exec_path"] = os.path.normpath(conf["exec_path"])
         process_names.add(name)
-        processes.append((name, env_name, script_path))
     
-    states = configs["states"]
     for state, procs in configs["states"].items():
         if not set(procs).issubset(process_names):
             raise ValueError("Some processes in state '%s' are not included in processes" % state)
 
-    return python_exec, processes, states
+    return configs
 
 
-def run_new_process(env_name, python_exec, script_path, process_name, color):
+def run_new_process(env_name, script_path, process_name, conda_exec="conda", python_exec="python", color=bcolors.OKBLUE):
+    global running_processes
+
     print(color + "Starting %s..." % process_name + bcolors.ENDC)
     print_tag = color + "%15s | " % process_name + bcolors.ENDC
-    cmds = ["conda", "activate", env_name, "&&", python_exec, script_path, "&&", "conda", "deactivate"]
+    cmds = [conda_exec, "activate", env_name, "&&", python_exec, script_path]
 
-    p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=True)
+    p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
     running_processes[process_name] = p
 
+    print(color + "%s has started (%d)" % (process_name, p.pid) + bcolors.ENDC)
     while True:
-        output = p.stdout.readline()
-        if output == '' and p.poll() is not None:
+        if p.poll() is not None:
             break
+        output = p.stdout.readline()
         if output:
             print(print_tag + output.rstrip("\n"), flush=True)
-    print(color + "%s has stopped" % process_name + bcolors.ENDC)
+    print(color + "%s (%d) has stopped" % (process_name, p.pid) + bcolors.ENDC)
 
     running_processes.pop(process_name, None)
 
 
-def main(args):
-    p_count = 0
-    colors = [bcolors.OKPURPLE, bcolors.OKBLUE, bcolors.OKCYAN, bcolors.OKGREEN, bcolors.OKYELLOW]
-    python_exec, processes, states = read_config(args["configpath"])
-    for (process_name, env_name, script_path) in processes:
-        if process_name not in running_processes or running_processes[process] is None:
-            s = threading.Thread(target=run_new_process, args=(env_name, python_exec, script_path, process_name, colors[p_count % len(colors)]))
+def change_state(desired_state):
+    global p_count, current_state, configs, running_processes
+
+    if current_state is not None:
+        p_current = set(configs["states"][current_state])
+    else:
+        p_current = set()
+    p_target = set(configs["states"][desired_state])
+    p_term = p_current - p_target
+    p_start = p_target - p_current
+
+    for process_name in p_term:
+        running_processes[process_name].terminate()
+    for process_name in p_start:
+        env_name = configs["processes"][process_name]["conda_env"]
+        script_path = configs["processes"][process_name]["exec_path"]
+        if process_name not in running_processes or running_processes[process_name] is None:
+            s = threading.Thread(
+                target=run_new_process,
+                args=(env_name, script_path, process_name, configs["conda-exec"], configs["python-exec"], colors[p_count % len(colors)])
+                )
             s.start()
             p_count += 1
     
-    ### Start Testing ###
-    time.sleep(10)
-    print(running_processes)
-    running_processes["process1"].send_signal(signal.CTRL_C_EVENT)
-    time.sleep(1)
-    print(running_processes)
-    s = threading.Thread(target=run_new_process, args=("testenv", "python", "test.py", "process1", colors[p_count % len(colors)]))
-    s.start()
-    p_count += 1
-    time.sleep(5)
-    print(running_processes)
-    ### End Testing ###
+    current_state = desired_state
 
+
+def main(args):
+    global configs
+    configs = read_config(args["configpath"])
+    
+    ### Begin Testing ###
+    change_state("0")
+    time.sleep(5)
+    change_state("1")
+    time.sleep(5)
+    change_state("2")
+    time.sleep(5)
+    change_state("0")
+    ### End Testing ###
 
 if __name__ == "__main__":
     parser = ArgumentParser()
