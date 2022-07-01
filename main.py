@@ -68,7 +68,7 @@ def run_new_process(env_name, script_path, process_name, conda_exec="conda", pyt
 
     print(color + "Starting %s..." % process_name + bcolors.ENDC)
     print_tag = color + "%15s | " % process_name + bcolors.ENDC
-    cmds = [conda_exec, "activate", env_name, "&&", python_exec, script_path]
+    cmds = [conda_exec, "run", "-n", env_name, "--no-capture-output", python_exec, script_path]
 
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
     running_processes[process_name] = p
@@ -117,13 +117,7 @@ def main(args):
     configs = read_config(args["configpath"])
     
     ### Begin Testing ###
-    change_state("0")
-    time.sleep(5)
-    change_state("1")
-    time.sleep(5)
-    change_state("2")
-    time.sleep(5)
-    change_state("0")
+    change_state("default")
     ### End Testing ###
 
 if __name__ == "__main__":

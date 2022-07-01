@@ -1,5 +1,5 @@
 python-exec: "python3"
-conda-exec: "~/anaconda3/bin/conda.sh"
+conda-exec: "conda"
 
 processes:
   obj-detection:
@@ -13,6 +13,10 @@ processes:
     exec_path: "robocup2022-cv-person-tracker/person_tracker.py"
 
 states:
+  default:
+    - obj-detection
+    - what-is-that
+    - person-track
   problem1:
     - obj-detection
     - what-is-that

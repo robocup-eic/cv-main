@@ -1,0 +1,19 @@
+python-exec: "python3"
+conda-exec: "conda"
+
+processes:
+  process1:
+    conda_env: "env_python38"
+    exec_path: "test.py"
+  process2:
+    conda_env: "env_python38"
+    exec_path: "test.py"
+  process3:
+    conda_env: "env_python38"
+    exec_path: "test.py"
+
+states:
+  default:
+    - process1
+    - process2
+    - process3
