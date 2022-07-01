@@ -1,5 +1,5 @@
 python-exec: "python"
-conda-exec: D:\ProgramData\Anaconda3\Library\bin\conda.bat
+conda-exec: "conda"
 
 processes:
   process1:
@@ -13,7 +13,7 @@ processes:
     exec_path: "test.py"
 
 states:
-  "0":
+  default:
     - process1
     - process2
     - process3
