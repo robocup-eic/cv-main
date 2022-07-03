@@ -2,23 +2,40 @@ port: 15000
 conda-exec: "conda"
 
 processes:
-  obj-detection:
-    conda_env: "rbc_objdetect"
-    exec_cmd: "python3 robocup2022-cv-object-detection/object_detection.py"
-  what-is-that:
-    conda_env: "rbc_whatisthat"
-    exec_cmd: "python3 robocup2022-cv-what-is-that/what_is_that_v2.py"
   person-track:
-    conda_env: "rbc_persontrack"
-    exec_cmd: "python3 robocup2022-cv-person-tracker/person_tracker.py"
+    conda_env: "new-person-tracker"
+    exec_dir: "/home/eic/cv/robocup2022-cv-person-tracker/"
+    exec_cmd: "python3 person_tracker.py"
+  obj-yolov4:
+    conda_env: "yolov4"
+    exec_dir: "/home/eic/cv/robocup2022-cv-YOLOv4/"
+    exec_cmd: "python3 object_detection.py"
+  obj-yolov5:
+    conda_env: "yolov5"
+    exec_dir: "/home/eic/cv/robocup2022-cv-yolov5/"
+    exec_cmd: "python3 yolov5.py"
+  face-recog:
+    conda_env: "face-reg"
+    exec_dir: "/home/eic/cv/face-recognition/"
+    exec_cmd: "python3 facerecog.py"
+  wit-yolov5:
+    conda_env: "what-is-that-yolov5"
+    exec_dir: "/home/eic/cv/robocup2022-cv-what-is-that-yolov5/"
+    exec_cmd: "python3 what_is_that_yolov5.py"
+  wit-yolor:
+    conda_env: "what-is-that-yolor"
+    exec_dir: "/home/eic/cv/robocup2022-cv-what-is-that/"
+    exec_cmd: "python3 what_is_that.py"
 
 states:
   default:
-    - obj-detection
-    - what-is-that
     - person-track
-  problem1:
-    - obj-detection
-    - what-is-that
-  problem2:
+    - obj-yolov4
+    - obj-yolov5
+    - face-recog
+    - wit-yolov5
+    - wit-yolor
+  test_problem1:
     - person-track
+    - obj-yolov4
+    - obj-yolov5
