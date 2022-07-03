@@ -2,8 +2,10 @@ import subprocess
 import threading
 import os
 import time
+import socket
 from argparse import ArgumentParser
 import yaml
+from custom_socket import CustomSocket
 
 
 class bcolors:
@@ -30,9 +32,11 @@ def read_config(config_path):
     with open(config_path) as file:
         configs = yaml.load(file, Loader=yaml.FullLoader)
 
-    if "python-exec" not in configs or configs["python-exec"] is None:
-        configs["python-exec"] = "python"
-        print("python-exec is not set in config.yaml, uses 'python' as default value")
+    if "port" not in configs or configs["port"] is None:
+        configs["port"] = 15000
+        print("port is not set in config.yaml, uses 15000 as default port")
+    if not isinstance(configs["port"], int):
+        raise ValueError("Value of 'port' in config.yaml must be integer")
     if "conda-exec" not in configs or configs["conda-exec"] is None:
         configs["conda-exec"] = "conda"
         print("conda-exec is not set in config.yaml, uses 'conda' as default value")
@@ -42,18 +46,16 @@ def read_config(config_path):
         configs["states"] = [{"default": [k for k in configs["processes"]]}]
         print("states is not set in config.yaml, created state 'default' with all processes started")
 
-    configs["python-exec"] = os.path.normpath(configs["python-exec"])
     configs["conda-exec"] = os.path.normpath(configs["conda-exec"])
     
     process_names = set()
     for name, conf in configs["processes"].items():
-        if "exec_path" not in conf or "conda_env" not in conf:
-            raise ValueError("Process '%s' in config.yaml must contain both 'exec_path' and 'conda_env' fields" % name)
-        if not isinstance(conf["exec_path"], str):
-            raise ValueError("Value of 'exec_path' in process '%s' must be string" % name)
+        if "exec_cmd" not in conf or "conda_env" not in conf:
+            raise ValueError("Process '%s' in config.yaml must contain both 'exec_cmd' and 'conda_env' fields" % name)
+        if not isinstance(conf["exec_cmd"], str):
+            raise ValueError("Value of 'exec_cmd' in process '%s' must be string" % name)
         if not isinstance(conf["conda_env"], str):
             raise ValueError("Value of 'conda_env' in process '%s' must be string" % name)
-        conf["exec_path"] = os.path.normpath(conf["exec_path"])
         process_names.add(name)
     
     for state, procs in configs["states"].items():
@@ -63,12 +65,12 @@ def read_config(config_path):
     return configs
 
 
-def run_new_process(env_name, script_path, process_name, conda_exec="conda", python_exec="python", color=bcolors.OKBLUE):
+def run_new_process(env_name, exec_cmd, process_name, conda_exec="conda", color=bcolors.OKBLUE):
     global running_processes
 
     print(color + "Starting %s..." % process_name + bcolors.ENDC)
     print_tag = color + "%15s | " % process_name + bcolors.ENDC
-    cmds = [conda_exec, "run", "-n", env_name, "--no-capture-output", python_exec, script_path]
+    cmds = [conda_exec, "run", "-n", env_name, "--no-capture-output"] + exec_cmd.split(" ")
 
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
     running_processes[process_name] = p
@@ -100,11 +102,11 @@ def change_state(desired_state):
         running_processes[process_name].terminate()
     for process_name in p_start:
         env_name = configs["processes"][process_name]["conda_env"]
-        script_path = configs["processes"][process_name]["exec_path"]
+        exec_cmd = configs["processes"][process_name]["exec_cmd"]
         if process_name not in running_processes or running_processes[process_name] is None:
             s = threading.Thread(
                 target=run_new_process,
-                args=(env_name, script_path, process_name, configs["conda-exec"], configs["python-exec"], colors[p_count % len(colors)])
+                args=(env_name, exec_cmd, process_name, configs["conda-exec"], colors[p_count % len(colors)])
                 )
             s.start()
             p_count += 1
@@ -115,10 +117,21 @@ def change_state(desired_state):
 def main(args):
     global configs
     configs = read_config(args["configpath"])
-    
-    ### Begin Testing ###
     change_state("default")
-    ### End Testing ###
+    
+    server = CustomSocket(socket.gethostname(), configs["port"])
+    server.startServer()
+    while True:
+        conn, addr = server.sock.accept()
+        print("Client connected from", addr)
+        while True:
+            msg = server.recvMsg(conn)
+            try:
+                state = msg.decode("utf-8")
+                change_state(state)
+                print("State changed to %s from client %s", state, addr)
+            except:
+                print("Message received with error:", msg, type(msg))
 
 if __name__ == "__main__":
     parser = ArgumentParser()

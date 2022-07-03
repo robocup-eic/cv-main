@@ -1,16 +1,16 @@
-python-exec: "python3"
+port: 15000
 conda-exec: "conda"
 
 processes:
   process1:
     conda_env: "env_python38"
-    exec_path: "test.py"
+    exec_cmd: "python3 test.py"
   process2:
     conda_env: "env_python38"
-    exec_path: "test.py"
+    exec_cmd: "python3 test.py"
   process3:
     conda_env: "env_python38"
-    exec_path: "test.py"
+    exec_cmd: "python3 test.py"
 
 states:
   default:

@@ -1,24 +1,24 @@
-python-exec: "python"
+port: 15000
 conda-exec: "conda"
 
 processes:
   process1:
     conda_env: "testenv"
-    exec_path: "test.py"
+    exec_cmd: "python test.py"
   process2:
     conda_env: "testenv"
-    exec_path: "test.py"
+    exec_cmd: "python test.py"
   process3:
     conda_env: "testenv"
-    exec_path: "test.py"
+    exec_cmd: "python test.py"
 
 states:
   default:
     - process1
     - process2
     - process3
-  "1":
+  problem1:
     - process3
-  "2":
+  problem2:
     - process1
     - process2
