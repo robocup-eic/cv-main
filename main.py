@@ -69,7 +69,7 @@ def run_new_process(env_name, exec_cmd, process_name, conda_exec="conda", color=
     global running_processes
 
     print(color + "Starting %s..." % process_name + bcolors.ENDC)
-    print_tag = color + "%15s | " % process_name + bcolors.ENDC
+    print_tag = color + "%20s | " % process_name + bcolors.ENDC
     cmds = [conda_exec, "run", "-n", env_name, "--no-capture-output"] + exec_cmd.split(" ")
 
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
@@ -125,13 +125,28 @@ def main(args):
         conn, addr = server.sock.accept()
         print("Client connected from", addr)
         while True:
-            msg = server.recvMsg(conn)
+            try:
+                msg = server.recvMsg(conn)
+            except Exception as e:
+                print("Error while receiving data from client %s" % addr)
+                break
+            if msg is None:
+                break
             try:
                 state = msg.decode("utf-8")
                 change_state(state)
-                print("State changed to %s from client %s", state, addr)
-            except:
+                print("State changed to %s from client %s" % (state, addr))
+            except Exception as e:
+                # Bad Request
                 print("Message received with error:", msg, type(msg))
+                print(e)
+                server.sendMsg(conn, "Error while processing message: %s" % msg)
+            try:
+                server.sendMsg(conn, "Server has changed to state %s" % state)
+            except Exception as e:
+                # Error while sending response
+                print(e)
+                print("Error while sending response to client")
 
 if __name__ == "__main__":
     parser = ArgumentParser()

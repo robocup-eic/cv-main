@@ -6,7 +6,11 @@ from custom_socket import CustomSocket
 def main(args):
     c = CustomSocket(socket.gethostname(), args["port"])
     c.clientConnect()
-    c.req(args["state"])
+    c.sendMsg(c.sock, args["state"])
+    res = c.recvMsg(c.sock).decode('utf-8')
+    print(res)
+    c.sock.shutdown(socket.SHUT_RDWR)
+    c.sock.close()
 
 if __name__ == "__main__":
     parser = ArgumentParser()
