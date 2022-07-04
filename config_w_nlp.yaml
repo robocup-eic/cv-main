@@ -30,12 +30,33 @@ processes:
     conda_env: "object-tracker"
     exec_dir: "/home/eic/cv/robocup2022-cv-object-tracker"
     exec_cmd: "python3 object_tracker.py"
+  asr:
+    conda_env: "nlp"
+    exec_dir: "/home/eic/nlp/azure"
+    exec_cmd: "python3 asr_final.py"
+  rasa1:
+    conda_env: "nlp"
+    exec_dir: "/home/eic/nlp/rasa-nlu-v1"
+    exec_cmd: "rasa run --enable"
+  rasa2:
+    conda_env: "nlp"
+    exec_dir: "/home/eic/nlp/rasa-nlu-v1"
+    exec_cmd: "rasa run actions"
+  tts:
+    conda_env: "nlp"
+    exec_dir: "/home/eic/nlp/TTS-REST"
+    exec_cmd: "python3 tts_azure.py"
 
 states:
   default:
     - person-track
     - face-recog
     - obj-tracker
+    - wit-yolov5
+    - asr
+    - rasa1
+    - rasa2
+    - tts
   test_problem1:
     - person-track
     - obj-yolov4

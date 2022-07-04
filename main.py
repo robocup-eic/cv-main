@@ -1,7 +1,6 @@
 import subprocess
 import threading
 import os
-import time
 import socket
 from argparse import ArgumentParser
 import yaml
@@ -14,6 +13,7 @@ class bcolors:
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     OKYELLOW = '\033[93m'
+    OKGRAY = '\033[90m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
@@ -21,7 +21,7 @@ class bcolors:
 
 
 
-colors = [bcolors.OKPURPLE, bcolors.OKBLUE, bcolors.OKGREEN, bcolors.OKYELLOW, bcolors.OKCYAN]
+colors = [bcolors.OKPURPLE, bcolors.OKBLUE, bcolors.OKGREEN, bcolors.OKYELLOW, bcolors.OKCYAN, bcolors.OKGRAY]
 p_count = 0
 configs = dict()
 running_processes = dict()
@@ -52,10 +52,13 @@ def read_config(config_path):
     for name, conf in configs["processes"].items():
         if "exec_cmd" not in conf or "conda_env" not in conf:
             raise ValueError("Process '%s' in config.yaml must contain both 'exec_cmd' and 'conda_env' fields" % name)
-        if not isinstance(conf["exec_cmd"], str):
-            raise ValueError("Value of 'exec_cmd' in process '%s' must be string" % name)
         if not isinstance(conf["conda_env"], str):
             raise ValueError("Value of 'conda_env' in process '%s' must be string" % name)
+        if not isinstance(conf["exec_dir"], str):
+            raise ValueError("Value of 'exec_dir' in process '%s' must be string" % name)
+        if not isinstance(conf["exec_cmd"], str):
+            raise ValueError("Value of 'exec_cmd' in process '%s' must be string" % name)
+        conf["exec_dir"] = os.path.normpath(conf["exec_dir"])
         process_names.add(name)
     
     for state, procs in configs["states"].items():
@@ -65,14 +68,14 @@ def read_config(config_path):
     return configs
 
 
-def run_new_process(env_name, exec_cmd, process_name, conda_exec="conda", color=bcolors.OKBLUE):
+def run_new_process(env_name, exec_dir, exec_cmd, process_name, conda_exec="conda", color=bcolors.OKBLUE):
     global running_processes
 
     print(color + "Starting %s..." % process_name + bcolors.ENDC)
-    print_tag = color + "%20s | " % process_name + bcolors.ENDC
+    print_tag = color + "%15s | " % process_name + bcolors.ENDC
     cmds = [conda_exec, "run", "-n", env_name, "--no-capture-output"] + exec_cmd.split(" ")
 
-    p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
+    p = subprocess.Popen(cmds, cwd=exec_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', shell=False)
     running_processes[process_name] = p
 
     print(color + "%s has started (%d)" % (process_name, p.pid) + bcolors.ENDC)
@@ -102,11 +105,12 @@ def change_state(desired_state):
         running_processes[process_name].terminate()
     for process_name in p_start:
         env_name = configs["processes"][process_name]["conda_env"]
+        exec_dir = configs["processes"][process_name]["exec_dir"]
         exec_cmd = configs["processes"][process_name]["exec_cmd"]
         if process_name not in running_processes or running_processes[process_name] is None:
             s = threading.Thread(
                 target=run_new_process,
-                args=(env_name, exec_cmd, process_name, configs["conda-exec"], colors[p_count % len(colors)])
+                args=(env_name, exec_dir, exec_cmd, process_name, configs["conda-exec"], colors[p_count % len(colors)])
                 )
             s.start()
             p_count += 1
